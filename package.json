@@ -1,0 +1,74 @@
+{
+  "name": "houbolt",
+  "version": "0.1.0",
+  "description": "Build GraphQL queries dynamically",
+  "main": "lib/houbolt.js",
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "check-types": "npm run build -- --noEmit",
+    "test": "npm run check-types && ava",
+    "coverage": "npm run build && nyc ava"
+  },
+  "contributors": [
+    "Agustin Zubiaga <agustin@gopinata.com>",
+    "Piotr Brzeziński <piotr@gopinata.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "graphql",
+    "javascript",
+    "compiler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pinata-llc/Houbolt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pinata-llc/Houbolt/issues"
+  },
+  "homepage": "https://github.com/pinata-llc/Houbolt#readme",
+  "devDependencies": {
+    "ava": "^2.2.0",
+    "husky": "^3.0.0",
+    "nyc": "^14.1.1",
+    "prettier": "^1.18.2",
+    "ts-node": "^8.3.0",
+    "tslint": "^5.17.0",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.5.3"
+  },
+  "ava": {
+    "compileEnhancements": false,
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "include": [
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "**/*.d.ts",
+      "**/*.test.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run format"
+    }
+  }
+}

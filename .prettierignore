@@ -1,0 +1,4 @@
+tsconfig.json
+**/node_modules
+*.scss.d.ts
+dist
