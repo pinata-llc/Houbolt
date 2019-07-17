@@ -1,12 +1,15 @@
 import { DocumentNode, SelectionSetNode, FragmentDefinitionNode } from "graphql";
 
 import { Env } from "./environment";
-import { StrKeyOf } from "./strkeyof";
-import { ArgsConfig, buildArguments } from "./arguments";
+import { ArgsConfig, buildArguments, getArguments } from "./arguments";
 import { VarsConfig, buildVariables } from "./variables";
 
+type FilterKeys<O, T> = {
+  [Key in keyof O]: O[Key] extends T ? Key : never;
+}[keyof O];
+
 /** Query configuration object. */
-export interface QueryConfig<E extends Env, VC extends VarsConfig<E>> {
+export interface QueryConfig<E extends Env = Env, VC extends VarsConfig<E> = VarsConfig<E>, T = unknown> {
   /** The operation name {@link https://graphql.org/learn/queries/#operation-name} */
   readonly name: string;
   /** Variable configuration. {@see VarsConfig} */
@@ -14,75 +17,80 @@ export interface QueryConfig<E extends Env, VC extends VarsConfig<E>> {
   /** Entry point configuration */
   readonly entry: {
     /** The name of the Query entry point */
-    name: StrKeyOf<E["entries"]>;
+    name: Extract<FilterKeys<E["entries"], T>, string>;
     /** Arguments to be passed from variables */
-    args: ArgsConfig<E, VC>;
+    args?: ArgsConfig<E, VC>;
     /** An optional function that manipulates the selection set.
      * Common use cases include: nesting the selected fragments further down and adding constant fields.
      **/
     mapSelect?: (node: SelectionSetNode) => SelectionSetNode;
   };
+  /** An array of fragments to select  */
+  readonly fragments: DocumentNode[];
 }
 
-export interface Query<E extends Env, VC extends VarsConfig<E>> {
-  /** Given an array of fragments, it returns the final DocumentNode.
-   * The fragments array can be empty as long as the mapSelect config option selects something.
-   */
-  readonly select: (fragments: FragmentDefinitionNode[]) => DocumentNode;
-  /** The configuration object used to build this query. */
-  readonly config: QueryConfig<E, VC>;
-}
+/** Should only be used when inferring the generics */
+type ResultQuery<E extends Env = any, VC extends VarsConfig<E> = any, T = any> = Pick<QueryConfig<E, VC, T>, "entry">;
 
-/** Creates reusable query {@see Query} */
-export function createQuery<E extends Env, VC extends VarsConfig<E>>(config: QueryConfig<E, VC>): Query<E, VC> {
-  const { name, entry, variables } = config;
+export type QueryEntryResult<Q extends ResultQuery> = Q extends ResultQuery<infer E, any, infer T>
+  ? T extends unknown
+    ? E["entries"][Q["entry"]["name"]]
+    : T
+  : never;
 
+/** It returns a type represeting the raw output of a query */
+export type QueryResult<Q extends ResultQuery, E extends string> = Record<E, QueryEntryResult<Q>>;
+
+/** Builds a GraphQL query AST from a QueryConfig object */
+export function buildQuery<E extends Env, VC extends VarsConfig<E>>({
+  name,
+  entry,
+  variables,
+  fragments,
+}: QueryConfig<E, VC, any>): DocumentNode {
   const variableDefinitions = buildVariables(variables);
-  const entryArgs = buildArguments(entry.args);
+  const entryArgs = buildArguments(getArguments<E, VC>(variables, entry.args));
+
+  const fragmentNodes = fragments.map(fragment => fragment.definitions[0] as FragmentDefinitionNode);
+
+  const fragmentsSet: SelectionSetNode = {
+    kind: "SelectionSet",
+    selections: fragmentNodes.map(fragment => ({
+      kind: "FragmentSpread",
+      name: fragment.name,
+      directives: [],
+    })),
+  };
 
   return {
-    select: fragments => {
-      const fragmentsSet: SelectionSetNode = {
-        kind: "SelectionSet",
-        selections: fragments.map(fragment => ({
-          kind: "FragmentSpread",
-          name: fragment.name,
-          directives: [],
-        })),
-      };
-
-      return {
-        kind: "Document",
-        definitions: [
-          {
-            kind: "OperationDefinition",
-            operation: "query",
-            name: {
-              kind: "Name",
-              value: name,
+    kind: "Document",
+    definitions: [
+      {
+        kind: "OperationDefinition",
+        operation: "query",
+        name: {
+          kind: "Name",
+          value: name,
+        },
+        variableDefinitions,
+        directives: [],
+        selectionSet: {
+          kind: "SelectionSet",
+          selections: [
+            {
+              kind: "Field",
+              name: {
+                kind: "Name",
+                value: entry.name,
+              },
+              arguments: entryArgs,
+              directives: [],
+              selectionSet: entry.mapSelect ? entry.mapSelect(fragmentsSet) : fragmentsSet,
             },
-            variableDefinitions,
-            directives: [],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                {
-                  kind: "Field",
-                  name: {
-                    kind: "Name",
-                    value: entry.name,
-                  },
-                  arguments: entryArgs,
-                  directives: [],
-                  selectionSet: entry.mapSelect ? entry.mapSelect(fragmentsSet) : fragmentsSet,
-                },
-              ],
-            },
-          },
-          ...fragments,
-        ],
-      };
-    },
-    config,
+          ],
+        },
+      },
+      ...fragmentNodes,
+    ],
   };
 }

@@ -1,6 +1,6 @@
 /** GraphQL environment type */
 export type Env = {
-  /** Which TypeScript corresponds to which GraphQL type.
+  /** Which TypeScript type corresponds to which GraphQL type.
    *
    * @example
    *  houbolt<{
