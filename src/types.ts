@@ -3,9 +3,9 @@ import { StrKeyOf } from "./strkeyof";
 import { NamedTypeNode, ListTypeNode, TypeNode } from "graphql";
 
 export type GQLNamedType<E extends Env> = StrKeyOf<E["types"]>;
-export type GQLListType<E extends Env> = [GQLNamedType<E>];
+export type GQLListType<E extends Env> = readonly [GQLNamedType<E>];
 export type GQLRawType<E extends Env> = GQLNamedType<E> | GQLListType<E>;
-export type GQLNonNullType<E extends Env> = [GQLRawType<E>, "!"];
+export type GQLNonNullType<E extends Env> = readonly [GQLRawType<E>, "!"];
 export type GQLType<E extends Env> = GQLRawType<E> | GQLNonNullType<E>;
 
 // prettier-ignore
