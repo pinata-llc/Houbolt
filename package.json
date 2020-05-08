@@ -33,7 +33,7 @@
   "homepage": "https://github.com/pinata-llc/Houbolt#readme",
   "devDependencies": {
     "@types/graphql": "^14.2.2",
-    "ava": "^2.2.0",
+    "ava": "^3.8.2",
     "husky": "^3.0.0",
     "nyc": "^14.1.1",
     "prettier": "^1.18.2",
