@@ -1,6 +1,6 @@
 {
   "name": "houbolt",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Build GraphQL queries dynamically",
   "main": "lib/query.js",
   "files": [
